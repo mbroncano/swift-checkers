@@ -54,8 +54,8 @@ class GameScene: SKScene {
 
     override func didMove(to view: SKView) {
         strategist = GKMonteCarloStrategist()
-//        (strategist as? GKMinmaxStrategist)?.maxLookAheadDepth = 4
 //        strategist = GKMinmaxStrategist()
+//        (strategist as? GKMinmaxStrategist)?.maxLookAheadDepth = 4
         strategist.randomSource = GKLinearCongruentialRandomSource()
         strategist.gameModel = Board(BitBoard())
 
@@ -291,7 +291,19 @@ class GameScene: SKScene {
                 label.text = "Thinking ..."
                 DispatchQueue.global(qos: .background).async {
                     DispatchQueue.main.async {
-                        if let update = self.strategist.bestMoveForActivePlayer() as? Update {
+
+                        var update: Update? = nil
+                        if player == .White {
+
+                            if let mcts = MCTS(self.gameModel.board).search() {
+                                update = Update(mcts, self.gameModel.board)
+                            }
+                        } else {
+                            update = self.strategist.bestMoveForActivePlayer() as? Update
+
+                        }
+
+                        if let update = update as? Update {
                             self.updateBoard(update)
                         } else {
                             print("wat")

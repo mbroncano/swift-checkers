@@ -17,6 +17,7 @@
 		C7764E8220DD915B0035012F /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7764E8120DD915B0035012F /* GameModel.swift */; };
 		C7764E8420DD93A20035012F /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = C7764E8320DD93A20035012F /* README.md */; };
 		C7764E8820DD97120035012F /* screenshot.jpg in Resources */ = {isa = PBXBuildFile; fileRef = C7764E8720DD97120035012F /* screenshot.jpg */; };
+		C7764E8E20E08E080035012F /* MCTS.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7764E8B20E055780035012F /* MCTS.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		C7764E8120DD915B0035012F /* GameModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
 		C7764E8320DD93A20035012F /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
 		C7764E8720DD97120035012F /* screenshot.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = screenshot.jpg; sourceTree = SOURCE_ROOT; };
+		C7764E8B20E055780035012F /* MCTS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCTS.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +77,7 @@
 				C7764E7420DD90CB0035012F /* Assets.xcassets */,
 				C7764E7620DD90CB0035012F /* LaunchScreen.storyboard */,
 				C7764E7920DD90CB0035012F /* Info.plist */,
+				C7764E8B20E055780035012F /* MCTS.swift */,
 			);
 			path = "Swift Checkers";
 			sourceTree = "<group>";
@@ -152,6 +155,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C7764E8E20E08E080035012F /* MCTS.swift in Sources */,
 				C7764E8220DD915B0035012F /* GameModel.swift in Sources */,
 				C7764E8020DD91400035012F /* BitBoard.swift in Sources */,
 				C7764E6E20DD90C90035012F /* GameScene.swift in Sources */,

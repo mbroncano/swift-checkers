@@ -19,12 +19,13 @@ public struct BitBoard {
 
     let player: Bool
     let range: Range<Int>
+    let turn: Int
 
     public init() {
         self.init(white: 0x00000FFF, black: 0xFFF00000, queen: 0, player: false)
     }
 
-    public init(white: Mask, black: Mask, queen: Mask, player: Bool, range: Range<Int> = 0..<256) {
+    init(white: Mask, black: Mask, queen: Mask, player: Bool, range: Range<Int> = BitBoard.allMovements, turn: Int = 0) {
         if white & black != 0 {
             fatalError("white and black pieces in the same check")
         }
@@ -38,6 +39,7 @@ public struct BitBoard {
         self.queen = queen
         self.player = player
         self.range = range
+        self.turn = turn
     }
 }
 
@@ -109,6 +111,10 @@ extension BitBoard: Sequence {
 
     var isContinuation: Bool { return range != BitBoard.allMovements }
 
+    var next: BitBoard {
+        return BitBoard(white: white, black: black, queen: queen, player:!player, range: BitBoard.allMovements, turn: turn+1)
+    }
+
     // this iterator will skip the intermediate captures
     public func makeIterator() -> AnyIterator<BitBoard> {
         var stack = [self.makeIteratorCont()]
@@ -139,12 +145,19 @@ extension BitBoard: Sequence {
 
         let moveMask: [Mask] = [0xF0808080, 0xF1010101, 0x8080808F, 0x0101010F] // cannot move in this direction
         let captMask: [Mask] = [0xFF888888, 0xFF111111, 0x888888FF, 0x111111FF] // cannot capture in this direction
-        let (playerMask, opponentMask) = player ? (black, white) : (white, black)
-        let empty: Mask = ~(white|black)
-
-        let board = self
+        let emptyMask: Mask = ~(white|black)
+        let queenMask = queen
+        let isBlack = player
+        let (playerMask, opponentMask) = isBlack ? (black, white) : (white, black)
+        let thisTurn = turn
 
         return AnyIterator {
+
+            // check the opponent has pieces
+            guard opponentMask.nonzeroBitCount != 0 else { return nil }
+
+            // check we have pieces
+            guard playerMask.nonzeroBitCount != 0 else { return nil }
 
             // 0..127 - capture, 128..257 - move
             while i < self.range.endIndex {
@@ -158,14 +171,14 @@ extension BitBoard: Sequence {
                 guard cap || !hasCaptured else { break }
 
                 // only occupied checks
-                guard empty & this == 0 else { continue }
+                guard emptyMask & this == 0 else { continue }
 
                 // check for capture or move in this direction for the player
                 guard ~(cap ? captMask : moveMask)[dir] & this & playerMask != 0 else { continue }
 
                 // check if player can capture or move in this direction, or it is a queen
-                let isQueen = board.queen & this != 0
-                let isForward = board.player == (dir & 2 != 0)
+                let isQueen = queenMask & this != 0
+                let isForward = isBlack == (dir & 2 != 0)
                 guard isQueen || isForward else { continue }
 
                 let odd = (idx >> 2 & 1) // 1 if odd row
@@ -177,7 +190,7 @@ extension BitBoard: Sequence {
                 let mask1 = Mask(0x10 << adj1)
 
                 // check for opponent or empty check
-                guard mask1 & (cap ? opponentMask : empty) != 0 else { continue }
+                guard mask1 & (cap ? opponentMask : emptyMask) != 0 else { continue }
 
                 let playerXor: Mask
                 let opponentXor: Mask
@@ -188,7 +201,7 @@ extension BitBoard: Sequence {
                     let mask2 = Mask(1 << adj2)
 
                     // check for empty check
-                    guard mask2 & empty != 0 else { continue }
+                    guard mask2 & emptyMask != 0 else { continue }
 
                     hasCaptured = true
                     playerXor = mask2
@@ -202,20 +215,21 @@ extension BitBoard: Sequence {
                 // player capture and movement
                 let newPlayerMask = playerMask ^ this ^ playerXor
                 let newOpponentMask = opponentMask ^ opponentXor
-                let (newWhite, newBlack) = board.player ? (newOpponentMask, newPlayerMask) : (newPlayerMask, newOpponentMask)
+                let (newWhite, newBlack) = isBlack ? (newOpponentMask, newPlayerMask) : (newPlayerMask, newOpponentMask)
 
                 // queen promotion, movement and capture
-                let newQueenMaskPromo = playerXor & (board.player ? 0xf : 0xf0000000)
-                let newQueenMaskPlayer = (isQueen ? this | playerXor : 0) | (board.queen & opponentXor)
-                let newQueenMask = board.queen ^ newQueenMaskPlayer | newQueenMaskPromo // order is important
+                let newQueenMaskPromo = playerXor & (isBlack ? 0xf : 0xf0000000)
+                let newQueenMaskPlayer = (isQueen ? this | playerXor : 0) | (queenMask & opponentXor)
+                let newQueenMask = queenMask ^ newQueenMaskPlayer | newQueenMaskPromo // order is important
 
                 // for captures that are not promotions, continue capturing
                 let new = (idx - (wst << 1) - (sth << 1) + 9) << 2
                 let cont = cap && (isQueen || (newQueenMaskPromo == 0))
                 let range = cont ? new..<(new + 4) : BitBoard.allMovements
-                let newPlayer = cont ? board.player : !board.player
+                let newPlayer = cont ? isBlack : !isBlack
+                let newTurn = cont ? thisTurn : thisTurn + 1
 
-                let res = BitBoard(white: newWhite, black: newBlack, queen: newQueenMask, player: newPlayer, range: range)
+                let res = BitBoard(white: newWhite, black: newBlack, queen: newQueenMask, player: newPlayer, range: range, turn: newTurn)
 
                 return res
             }
@@ -223,9 +237,10 @@ extension BitBoard: Sequence {
             // when exploring continuations, and there's none, return self and flip sides
             if !hasCaptured && self.isContinuation {
                 hasCaptured = true
-                return BitBoard(white: board.white, black: board.black, queen: board.queen, player: !board.player)
+                return self.next
             }
 
+            // no movements found
             return nil
         }
     }
