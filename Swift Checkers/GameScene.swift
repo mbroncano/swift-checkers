@@ -53,9 +53,9 @@ class GameScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
-        strategist = GKMonteCarloStrategist()
-//        strategist = GKMinmaxStrategist()
-//        (strategist as? GKMinmaxStrategist)?.maxLookAheadDepth = 4
+//        strategist = GKMonteCarloStrategist()
+        strategist = GKMinmaxStrategist()
+        (strategist as? GKMinmaxStrategist)?.maxLookAheadDepth = 4
         strategist.randomSource = GKLinearCongruentialRandomSource()
         strategist.gameModel = Board(BitBoard())
 
@@ -252,9 +252,9 @@ class GameScene: SKScene {
 
     func updateBoard(_ update: Update) {
         gameModel.apply(update)
-        print("move: \(String(describing: update.move))")
-        print("capture: \(String(describing: update.capture))")
-        print("promotion: \(String(describing: update.promotion))")
+//        print("move: \(String(describing: update.move))")
+//        print("capture: \(String(describing: update.capture))")
+//        print("promotion: \(String(describing: update.promotion))")
 
         let duration = Player.White.isComputer && Player.Black.isComputer ? 0.01 : 0.25
 

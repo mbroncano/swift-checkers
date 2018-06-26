@@ -29,26 +29,30 @@ public struct MCTS {
         var nums = 0
 
         func makeIteratorAncestors() -> AnyIterator<Node> {
-            var node = self
+            var node: Node? = self
 
             return AnyIterator {
-                guard let result = node.parent else { return nil }
-                node = result
+                defer { node = node?.parent }
                 return node
             }
         }
 
+        var pwin: Double { return Double(wins) / Double(nums) }
+
+        // UCT (Upper Confidence Bound 1 applied to trees)
         func UCT(total: Int) -> Double {
-            return Double(wins) / Double(nums) + sqrt(2 * log(Double(total)) / Double(nums))
+            return pwin + sqrt(2 * log(Double(total)) / Double(nums))
         }
 
         // there are three reason for not having movements
         // 1. the opponent has no pieces left (Win)
         // 2. the player has no pieces left (Loss)
-        // 3. the player has no moveements left (Loss)
+        // 3. the player has no movements left (Loss)
         var isWin: Bool {
-            return (board.player ? board.black : board.white).nonzeroBitCount == 0
+            guard children.count == 0 else { return false }
+            return (board.player ? board.white : board.black).nonzeroBitCount == 0
         }
+
     }
 
     let root: Node
@@ -57,21 +61,30 @@ public struct MCTS {
         self.root = Node(board: board)
     }
 
-    public func search(plays: Int = 15) -> BitBoard? {
-        for play in 0..<plays {
+    public func search(plays: Int = 30, depth: Int = 50) -> BitBoard? {
+        var play = 0
+
+//        for play in 0..<plays {
+//        while play < plays {
+        let when = Date(timeIntervalSinceNow: 0.5)
+        while when > Date() {
+            play += 1
+
+            // selection/expansion
             guard let result = selection(node: root, play: play) else { continue }
 
+            // rollout
             var leaf = result
-            var depth = 50
-
-            while depth > 0, let next = leaf.children.randomElement() {
-                depth -= 1
+            var i = 0
+            while i < depth {
+                guard !leaf.isWin else { break }
+                guard let next = leaf.children.randomElement() else { break }
+                i += 1
                 leaf = next
             }
 
             // back propagation
-            let ancestors = result.makeIteratorAncestors()
-            for node in ancestors {
+            for node in result.makeIteratorAncestors() {
                 node.nums += 1
 
                 if leaf.isWin && (node.board.player == leaf.board.player) {
@@ -80,7 +93,11 @@ public struct MCTS {
             }
         }
 
-        return root.children.max { $0.wins > $1.wins }?.board
+//        print("wins", root.children.map{ $0.wins }.reduce(0, +), root.wins)
+//        print("nums", root.children.map{ $0.nums }.reduce(0, +), root.nums)
+        print(play, root.children.map{ $0.pwin }.sorted().first! )
+
+        return root.children.max { $0.pwin < $1.pwin }?.board
     }
 
     func selection(node: Node, play: Int) -> Node? {
@@ -88,12 +105,12 @@ public struct MCTS {
         // no movements: terminal node
         guard !node.children.isEmpty else { return nil }
 
-        // pickup the first unvisited
+        // pickup the first unvisited (expansion)
         if let unvisited = node.children.first(where: { $0.nums == 0 }) {
             return unvisited
         }
 
-        // return the one with the highest UCT
+        // return the one with the highest UCT (selection)
         if let next = node.children.max(by: { $0.UCT(total: play) > $1.UCT(total: play) }) {
             return selection(node: next, play: play)
         }
