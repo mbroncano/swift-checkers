@@ -12,12 +12,13 @@ public struct BitBoard {
     public typealias Mask = UInt32
     public typealias MaskIndex = Int
     public typealias CheckIndex = Int
+    public typealias Player = Bool
 
     let white: Mask
     let black: Mask
     let queen: Mask
 
-    let player: Bool
+    let player: Player
     let range: Range<Int>
     let turn: Int
 
@@ -40,6 +41,12 @@ public struct BitBoard {
         self.player = player
         self.range = range
         self.turn = turn
+    }
+}
+
+extension BitBoard.Player {
+    public var description: String {
+        return self ? "black" : "white"
     }
 }
 
